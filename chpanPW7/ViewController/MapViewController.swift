@@ -9,7 +9,7 @@ import UIKit
 import CoreLocation
 import MapKit
 
-class MapViewController: UIViewController {
+class MapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,6 +27,7 @@ class MapViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         
         view.addGestureRecognizer(tap)
+        mapView.delegate = self
         // Do any additional setup after loading the view.
     }
     
@@ -36,6 +37,16 @@ class MapViewController: UIViewController {
     
     override var preferredStatusBarStyle: UIStatusBarStyle{
         return .darkContent
+    }
+    
+    var cooridinates: [CLLocationCoordinate2D] = []
+    
+    private func getCoordinateFrom(address: String, completion: @escaping(_ coordinate: CLLocationCoordinate2D?, _ error: Error?) -> ()){
+        DispatchQueue.global(qos: .background).async {
+            CLGeocoder().geocodeAddressString(address){
+                completion($0?.first?.location?.coordinate, $1)
+            }
+        }
     }
     
     private let buttonStack: UIStackView = UIStackView()
@@ -130,7 +141,79 @@ class MapViewController: UIViewController {
     }
     
     @objc func goButtonWasPressed(){
-        print("Go pressed")
+        print("Go button pressed")
+        guard
+            let first = startLocation.text,
+            let second = endLocation.text,
+            first != second
+        else {
+            return
+        }
+        let group = DispatchGroup()
+        group.enter()
+        getCoordinateFrom(address: first, completion: { [weak self] coords,_ in
+            if let coords = coords{
+                self?.cooridinates.append(coords)
+            }
+            group.leave()
+        })
+        
+        group.enter()
+        getCoordinateFrom(address: second, completion: { [weak self] coords,_ in
+            if let coords = coords{
+                self?.cooridinates.append(coords)
+            }
+            group.leave()
+        })
+        group.notify(queue: .main){
+            DispatchQueue.main.async {
+                [weak self] in self?.buildPath()
+            }
+        }
+        cooridinates = []
+        
+    }
+    
+    private func buildPath(){
+        print("Build Path")
+        if (cooridinates.count != 2) {
+            print("Coordinate not found")
+            return
+        }
+        let sourceCoordinate = cooridinates[0]
+        let destinationCoordinate = cooridinates[1]
+        print(cooridinates[0])
+        print(cooridinates[1])
+        let sPlaceMark = MKPlacemark(coordinate: sourceCoordinate)
+        let dPlaceMark = MKPlacemark(coordinate: destinationCoordinate)
+        
+        let sourceItem = MKMapItem(placemark: sPlaceMark)
+        let destinationItem = MKMapItem(placemark: dPlaceMark)
+        
+        
+        let directionRequest = MKDirections.Request();
+        directionRequest.source = sourceItem
+        directionRequest.destination = destinationItem
+        
+        directionRequest.transportType = .automobile
+                
+        let directions = MKDirections(request: directionRequest)
+        directions.calculate { (response, error) in
+            guard let response = response else {
+                if let error = error {
+                    print("No no no")
+                }
+                return
+            }
+            let route = response.routes[0]
+            self.mapView.addOverlay(route.polyline)
+            self.mapView.setVisibleMapRect(route.polyline.boundingMapRect, animated: true)
+        }
+    }
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        let render = MKPolylineRenderer(overlay: overlay as! MKPolyline)
+        render.strokeColor = .blue
+        return render
     }
     
 }

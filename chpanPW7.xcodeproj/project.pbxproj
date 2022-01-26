@@ -101,14 +101,12 @@
 		6DC6421427A02224006F06D7 /* chpanPW7 */ = {
 			isa = PBXGroup;
 			children = (
-				6DC6424727A174F6006F06D7 /* UIViewPin.swift */,
-				6DC6421527A02224006F06D7 /* AppDelegate.swift */,
-				6DC6421727A02224006F06D7 /* SceneDelegate.swift */,
-				6DC6421927A02224006F06D7 /* MapViewController.swift */,
+				6DC6424B27A18969006F06D7 /* Classes */,
+				6DC6424A27A18956006F06D7 /* Delegate */,
+				6DC6424927A1891D006F06D7 /* ViewController */,
 				6DC6421E27A02225006F06D7 /* Assets.xcassets */,
 				6DC6422027A02225006F06D7 /* LaunchScreen.storyboard */,
 				6DC6422327A02225006F06D7 /* Info.plist */,
-				6DC6424527A1674C006F06D7 /* MapButton.swift */,
 			);
 			path = chpanPW7;
 			sourceTree = "<group>";
@@ -128,6 +126,32 @@
 				6DC6423827A02225006F06D7 /* chpanPW7UITestsLaunchTests.swift */,
 			);
 			path = chpanPW7UITests;
+			sourceTree = "<group>";
+		};
+		6DC6424927A1891D006F06D7 /* ViewController */ = {
+			isa = PBXGroup;
+			children = (
+				6DC6421927A02224006F06D7 /* MapViewController.swift */,
+			);
+			path = ViewController;
+			sourceTree = "<group>";
+		};
+		6DC6424A27A18956006F06D7 /* Delegate */ = {
+			isa = PBXGroup;
+			children = (
+				6DC6421527A02224006F06D7 /* AppDelegate.swift */,
+				6DC6421727A02224006F06D7 /* SceneDelegate.swift */,
+			);
+			path = Delegate;
+			sourceTree = "<group>";
+		};
+		6DC6424B27A18969006F06D7 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				6DC6424727A174F6006F06D7 /* UIViewPin.swift */,
+				6DC6424527A1674C006F06D7 /* MapButton.swift */,
+			);
+			path = Classes;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
