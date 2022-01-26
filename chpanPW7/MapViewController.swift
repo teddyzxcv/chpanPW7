@@ -24,8 +24,8 @@ class MapViewController: UIViewController {
         
         
         configureUI()
-        let tap = UITapGestureRecognizer(target: self, action: #selector(UIInputViewController.dismissKeyboard))
-
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        
         view.addGestureRecognizer(tap)
         // Do any additional setup after loading the view.
     }
@@ -42,7 +42,7 @@ class MapViewController: UIViewController {
     
     private let buttonGo: MapButton = MapButton(backColor: UIColor.blue.cgColor, text: "Go", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
     
-    private let buttonClear: MapButton = MapButton(backColor: UIColor.gray.cgColor, text: "Clear", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+    private let buttonClear: MapButton = MapButton(backColor: UIColor.lightGray.cgColor, text: "Clear", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
     
     let startLocation: UITextField = {
         let control = UITextField()
@@ -96,6 +96,7 @@ class MapViewController: UIViewController {
     }()
     
     private func configureUI(){
+        buttonClear.addTarget(self, action: #selector(clearButtonWasPressed), for: .touchUpInside)
         buttonStack.addArrangedSubview(buttonGo)
         buttonStack.addArrangedSubview(buttonClear)
         buttonStack.frame = CGRect(x: 0, y: view.frame.size.height - 50, width: view.frame.size.width-30, height: 40)
@@ -116,16 +117,39 @@ class MapViewController: UIViewController {
             
         }
         view.addSubview(buttonStack)
-        
+        buttonClear.setTitleColor(UIColor.gray, for: .normal)
+        buttonGo.addTarget(self, action: #selector(goButtonWasPressed), for: .touchUpInside)
     }
     
+    @objc func clearButtonWasPressed(){
+        startLocation.text = ""
+        endLocation.text = ""
+        buttonClear.setTitleColor(.gray, for: .disabled)
+        buttonClear.backgroundColor = .lightGray
+        buttonClear.isEnabled = false
+    }
+    
+    @objc func goButtonWasPressed(){
+        print("Go pressed")
+    }
     
 }
 
 extension MapViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
+        if(textField == endLocation && startLocation.hasText){
+            goButtonWasPressed()
+        }
         return true
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
+        if (textField.hasText) {
+            buttonClear.setTitleColor(.black, for: .normal )
+            buttonClear.backgroundColor = .white
+            buttonClear.isEnabled = true
+        }
     }
     
 }
