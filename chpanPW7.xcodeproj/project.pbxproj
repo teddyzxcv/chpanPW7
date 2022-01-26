@@ -15,6 +15,8 @@
 		6DC6422D27A02225006F06D7 /* chpanPW7Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC6422C27A02225006F06D7 /* chpanPW7Tests.swift */; };
 		6DC6423727A02225006F06D7 /* chpanPW7UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC6423627A02225006F06D7 /* chpanPW7UITests.swift */; };
 		6DC6423927A02225006F06D7 /* chpanPW7UITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC6423827A02225006F06D7 /* chpanPW7UITestsLaunchTests.swift */; };
+		6DC6424627A1674C006F06D7 /* MapButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC6424527A1674C006F06D7 /* MapButton.swift */; };
+		6DC6424827A174F6006F06D7 /* UIViewPin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC6424727A174F6006F06D7 /* UIViewPin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +49,8 @@
 		6DC6423227A02225006F06D7 /* chpanPW7UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chpanPW7UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6DC6423627A02225006F06D7 /* chpanPW7UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chpanPW7UITests.swift; sourceTree = "<group>"; };
 		6DC6423827A02225006F06D7 /* chpanPW7UITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chpanPW7UITestsLaunchTests.swift; sourceTree = "<group>"; };
+		6DC6424527A1674C006F06D7 /* MapButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapButton.swift; sourceTree = "<group>"; };
+		6DC6424727A174F6006F06D7 /* UIViewPin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIViewPin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,12 +101,14 @@
 		6DC6421427A02224006F06D7 /* chpanPW7 */ = {
 			isa = PBXGroup;
 			children = (
+				6DC6424727A174F6006F06D7 /* UIViewPin.swift */,
 				6DC6421527A02224006F06D7 /* AppDelegate.swift */,
 				6DC6421727A02224006F06D7 /* SceneDelegate.swift */,
 				6DC6421927A02224006F06D7 /* MapViewController.swift */,
 				6DC6421E27A02225006F06D7 /* Assets.xcassets */,
 				6DC6422027A02225006F06D7 /* LaunchScreen.storyboard */,
 				6DC6422327A02225006F06D7 /* Info.plist */,
+				6DC6424527A1674C006F06D7 /* MapButton.swift */,
 			);
 			path = chpanPW7;
 			sourceTree = "<group>";
@@ -254,6 +260,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6DC6424827A174F6006F06D7 /* UIViewPin.swift in Sources */,
+				6DC6424627A1674C006F06D7 /* MapButton.swift in Sources */,
 				6DC6421A27A02224006F06D7 /* MapViewController.swift in Sources */,
 				6DC6421627A02224006F06D7 /* AppDelegate.swift in Sources */,
 				6DC6421827A02224006F06D7 /* SceneDelegate.swift in Sources */,
