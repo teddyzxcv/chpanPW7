@@ -39,7 +39,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         return .darkContent
     }
     
-    var cooridinates: [CLLocationCoordinate2D] = []
+    var coordinates: [CLLocationCoordinate2D] = []
     
     private func getCoordinateFrom(address: String, completion: @escaping(_ coordinate: CLLocationCoordinate2D?, _ error: Error?) -> ()){
         DispatchQueue.global(qos: .background).async {
@@ -153,7 +153,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         group.enter()
         getCoordinateFrom(address: first, completion: { [weak self] coords,_ in
             if let coords = coords{
-                self?.cooridinates.append(coords)
+                self?.coordinates.append(coords)
             }
             group.leave()
         })
@@ -161,7 +161,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         group.enter()
         getCoordinateFrom(address: second, completion: { [weak self] coords,_ in
             if let coords = coords{
-                self?.cooridinates.append(coords)
+                self?.coordinates.append(coords)
             }
             group.leave()
         })
@@ -170,20 +170,21 @@ class MapViewController: UIViewController, MKMapViewDelegate {
                 [weak self] in self?.buildPath()
             }
         }
-        cooridinates = []
+        coordinates = []
         
     }
     
     private func buildPath(){
         print("Build Path")
-        if (cooridinates.count != 2) {
+        mapView.removeOverlays(mapView.overlays)
+        if (coordinates.count != 2) {
             print("Coordinate not found")
             return
         }
-        let sourceCoordinate = cooridinates[0]
-        let destinationCoordinate = cooridinates[1]
-        print(cooridinates[0])
-        print(cooridinates[1])
+        let sourceCoordinate = coordinates[0]
+        let destinationCoordinate = coordinates[1]
+        print(coordinates[0])
+        print(coordinates[1])
         let sPlaceMark = MKPlacemark(coordinate: sourceCoordinate)
         let dPlaceMark = MKPlacemark(coordinate: destinationCoordinate)
         
@@ -196,7 +197,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         directionRequest.destination = destinationItem
         
         directionRequest.transportType = .automobile
-                
+        
         let directions = MKDirections(request: directionRequest)
         directions.calculate { (response, error) in
             guard let response = response else {
@@ -221,7 +222,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 extension MapViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
-        if(textField == endLocation && startLocation.hasText){
+        if(startLocation.hasText && endLocation.hasText){
             goButtonWasPressed()
         }
         return true
