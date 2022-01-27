@@ -8,124 +8,143 @@
 import UIKit
 import CoreLocation
 import MapKit
+import MapboxMaps
+import MapboxSearch
+import MapboxSearchUI
 
 class MapViewController: UIViewController, MKMapViewDelegate {
     
+    let navController = AdvancedViewController()
+    
+    let searchController = MapboxSearchController()
+    
+    var panelController : MapboxPanelController? = nil
+    
+    var annotationManager: CircleAnnotationManager?
+    
+    var searchFromOrTo: MapButton?
+    
+    var fromAnnotation: CircleAnnotation? = nil
+    
+    var toAnnotation: CircleAnnotation? = nil
+        
+    internal var mapView: MapView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let myResourceOptions = ResourceOptions(accessToken: Bundle.main.object(forInfoDictionaryKey: "MBXAccessToken") as! String)
+        let myMapInitOptions = MapInitOptions(resourceOptions: myResourceOptions)
+        mapView = MapView(frame: view.bounds, mapInitOptions: myMapInitOptions)
+        mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        mapView.location.delegate = self
         self.view.addSubview(mapView)
-        let leftMargin:CGFloat = 0
-        let topMargin:CGFloat = 0
-        let mapWidth:CGFloat = view.frame.size.width
-        let mapHeight:CGFloat = view.frame.size.height
-        
-        
-        mapView.frame = CGRect(x: leftMargin, y: topMargin, width: mapWidth, height: mapHeight)
-        
         
         configureUI()
-        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        
-        view.addGestureRecognizer(tap)
-        mapView.delegate = self
-        // Do any additional setup after loading the view.
+        searchController.delegate = self
+        mapView.location.options.puckType = .puck2D()
+        panelController = MapboxPanelController(rootViewController: searchController)
+        addChild(panelController!)
+        annotationManager = mapView.annotations.makeCircleAnnotationManager()
     }
     
-    @objc func dismissKeyboard() {
-        view.endEditing(true)
+    func requestPermissionsButtonTapped() {
+           mapView.location.requestTemporaryFullAccuracyPermissions(withPurposeKey: "CustomKey")
+       }
+    
+    func showResults(_ results: SearchResult) {
+        buttonClear.isEnabled = true
+        buttonClear.setTitleColor(.white, for: .normal)
+        annotationManager?.annotations.removeAll()
+        if(fromAnnotation != nil){
+            annotationManager?.annotations.append(fromAnnotation!)
+        }
+        if(toAnnotation != nil){
+            annotationManager?.annotations.append(toAnnotation!)
+        }
+        let newCamera = CameraOptions(center: results.coordinate,
+                                      padding: .zero,
+                                      anchor: .zero,
+                                      zoom: 14.5,
+                                      bearing: 0.0,
+                                      pitch: 15.0)
+        self.mapView.camera.fly(to: newCamera, duration: 2.0)
+        
     }
+    
     
     override var preferredStatusBarStyle: UIStatusBarStyle{
         return .darkContent
     }
     
-    var coordinates: [CLLocationCoordinate2D] = []
-    
-    private func getCoordinateFrom(address: String, completion: @escaping(_ coordinate: CLLocationCoordinate2D?, _ error: Error?) -> ()){
-        DispatchQueue.global(qos: .background).async {
-            CLGeocoder().geocodeAddressString(address){
-                completion($0?.first?.location?.coordinate, $1)
-            }
-        }
-    }
-    
     private let buttonStack: UIStackView = UIStackView()
+    
+    @objc let userLocationButton: MapButton = MapButton(backColor: UIColor.cyan.cgColor, text: "X", frame: CGRect(x: 20, y: 0, width: 30, height: 30))
     
     private let buttonGo: MapButton = MapButton(backColor: UIColor.blue.cgColor, text: "Go", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
     
     private let buttonClear: MapButton = MapButton(backColor: UIColor.lightGray.cgColor, text: "Clear", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
     
-    let startLocation: UITextField = {
-        let control = UITextField()
-        control.backgroundColor = UIColor.lightGray
-        control.textColor = UIColor.black
-        control.placeholder = "From"
-        control.layer.cornerRadius = 2
-        control.clipsToBounds = false
-        control.font = UIFont.systemFont(ofSize: 15)
-        control.borderStyle = UITextField.BorderStyle.roundedRect
-        control.autocorrectionType = UITextAutocorrectionType.yes
-        control.keyboardType = UIKeyboardType.default
-        control.returnKeyType = UIReturnKeyType.done
-        control.clearButtonMode = UITextField.ViewMode.whileEditing
-        control.contentVerticalAlignment = UIControl.ContentVerticalAlignment.center
+    let startLocation: MapButton = {
+        let control = MapButton(backColor: UIColor.lightGray.cgColor, text: "From", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+        control.addTarget(self, action: #selector(fromPressed), for: .touchUpInside)
         return control
     }()
     
-    let endLocation: UITextField = {
-        let control = UITextField()
-        control.backgroundColor = UIColor.lightGray
-        control.textColor = UIColor.black
-        control.placeholder = "To"
-        control.layer.cornerRadius = 2
-        control.clipsToBounds = false
-        control.font = UIFont.systemFont(ofSize: 15)
-        control.borderStyle = UITextField.BorderStyle.roundedRect
-        control.autocorrectionType = UITextAutocorrectionType.yes
-        control.keyboardType = UIKeyboardType.default
-        control.returnKeyType = UIReturnKeyType.done
-        control.clearButtonMode = UITextField.ViewMode.whileEditing
-        control.contentVerticalAlignment = UIControl.ContentVerticalAlignment.center
+    let endLocation:  MapButton = {
+        let control = MapButton(backColor: UIColor.lightGray.cgColor, text: "To", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+        control.addTarget(self, action: #selector(toPressed), for: .touchUpInside)
+        
         return control
     }()
     
     let textStack = UIStackView()
     
+    @objc func fromPressed(){
+        panelController?.setState(.opened)
+        panelController?.becomeFirstResponder()
+        searchFromOrTo = startLocation
+    }
     
-    private let mapView: MKMapView = {
-        let mapView = MKMapView()
-        mapView.layer.masksToBounds = true
-        mapView.layer.cornerRadius = 5
-        mapView.clipsToBounds = false
-        mapView.translatesAutoresizingMaskIntoConstraints = false
-        mapView.showsScale = true
-        mapView.showsCompass = true
-        mapView.showsTraffic = true
-        mapView.showsBuildings = true
-        mapView.showsUserLocation = true
-        return mapView
-    }()
+    @objc func toPressed(){
+        panelController?.setState(.opened)
+        panelController?.becomeFirstResponder()
+        searchFromOrTo = endLocation
+    }
+    
+    @objc func userLocationPressed() {
+        let newCamera = CameraOptions(center: mapView.location.latestLocation?.coordinate,
+                                      padding: .zero,
+                                      anchor: .zero,
+                                      zoom: 14.5,
+                                      bearing: 0.0,
+                                      pitch: 15.0)
+        self.mapView.camera.fly(to: newCamera, duration: 1.5)
+        
+    }
     
     private func configureUI(){
+        userLocationButton.center = view.center
+        userLocationButton.addTarget(self, action: #selector(userLocationPressed), for: .touchUpInside)
+        userLocationButton.center.x = 40
         buttonClear.addTarget(self, action: #selector(clearButtonWasPressed), for: .touchUpInside)
         buttonStack.addArrangedSubview(buttonGo)
         buttonStack.addArrangedSubview(buttonClear)
         buttonStack.frame = CGRect(x: 0, y: view.frame.size.height - 50, width: view.frame.size.width-30, height: 40)
         buttonStack.center = view.center
-        buttonStack.center.y = view.frame.size.height - 50
+        buttonStack.center.y = 180
         buttonStack.spacing = 30
         buttonStack.alignment = .fill
         buttonStack.axis = .horizontal
         buttonStack.distribution = .fillEqually
         textStack.axis = .vertical
         view.addSubview(textStack)
+        view.addSubview(userLocationButton)
         textStack.spacing = 10
         textStack.pin(to: view, [.top: 50, .left: 10, .right:10])
         [startLocation, endLocation].forEach{ textField in
             textField.setHeight(to: 40)
-            textField.delegate = self
             textStack.addArrangedSubview(textField)
-            
         }
         view.addSubview(buttonStack)
         buttonClear.setTitleColor(UIColor.gray, for: .normal)
@@ -133,83 +152,34 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     @objc func clearButtonWasPressed(){
-        startLocation.text = ""
-        endLocation.text = ""
+        startLocation.setTitle( "From", for: .normal)
+        endLocation.setTitle( "To", for: .normal)
+        startLocation.setTitleColor(.white, for: .disabled)
+        endLocation.setTitleColor(.white, for: .disabled)
+        startLocation.backgroundColor = .lightGray
+        endLocation.backgroundColor = .lightGray
+
         buttonClear.setTitleColor(.gray, for: .disabled)
         buttonClear.backgroundColor = .lightGray
         buttonClear.isEnabled = false
+        annotationManager?.annotations.removeAll()
+        fromAnnotation = nil
+        toAnnotation = nil
     }
     
     @objc func goButtonWasPressed(){
         print("Go button pressed")
-        guard
-            let first = startLocation.text,
-            let second = endLocation.text,
-            first != second
-        else {
+        if(fromAnnotation == nil){
+            fromAnnotation = CircleAnnotation(centerCoordinate: mapView.location.latestLocation!.coordinate )
+        }
+        if(toAnnotation == nil){
             return
         }
-        let group = DispatchGroup()
-        group.enter()
-        getCoordinateFrom(address: first, completion: { [weak self] coords,_ in
-            if let coords = coords{
-                self?.coordinates.append(coords)
-            }
-            group.leave()
-        })
+        navController.coordinates = [fromAnnotation!.point.coordinates, toAnnotation!.point.coordinates]
+        panelController?.setState(.hidden)
+        addChild(navController)
+        view.addSubview(navController.view)
         
-        group.enter()
-        getCoordinateFrom(address: second, completion: { [weak self] coords,_ in
-            if let coords = coords{
-                self?.coordinates.append(coords)
-            }
-            group.leave()
-        })
-        group.notify(queue: .main){
-            DispatchQueue.main.async {
-                [weak self] in self?.buildPath()
-            }
-        }
-        coordinates = []
-        
-    }
-    
-    private func buildPath(){
-        print("Build Path")
-        mapView.removeOverlays(mapView.overlays)
-        if (coordinates.count != 2) {
-            print("Coordinate not found")
-            return
-        }
-        let sourceCoordinate = coordinates[0]
-        let destinationCoordinate = coordinates[1]
-        print(coordinates[0])
-        print(coordinates[1])
-        let sPlaceMark = MKPlacemark(coordinate: sourceCoordinate)
-        let dPlaceMark = MKPlacemark(coordinate: destinationCoordinate)
-        
-        let sourceItem = MKMapItem(placemark: sPlaceMark)
-        let destinationItem = MKMapItem(placemark: dPlaceMark)
-        
-        
-        let directionRequest = MKDirections.Request();
-        directionRequest.source = sourceItem
-        directionRequest.destination = destinationItem
-        
-        directionRequest.transportType = .automobile
-        
-        let directions = MKDirections(request: directionRequest)
-        directions.calculate { (response, error) in
-            guard let response = response else {
-                if let error = error {
-                    print("No no no")
-                }
-                return
-            }
-            let route = response.routes[0]
-            self.mapView.addOverlay(route.polyline)
-            self.mapView.setVisibleMapRect(route.polyline.boundingMapRect, animated: true)
-        }
     }
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let render = MKPolylineRenderer(overlay: overlay as! MKPolyline)
@@ -219,22 +189,41 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
 }
 
-extension MapViewController: UITextFieldDelegate {
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-        if(startLocation.hasText && endLocation.hasText){
-            goButtonWasPressed()
+extension MapViewController: SearchControllerDelegate {
+    func categorySearchResultsReceived(category: SearchCategory, results: [SearchResult]) {
+        
+    }
+    
+    func searchResultSelected(_ searchResult: SearchResult) {
+        print(searchResult.name)
+        searchFromOrTo!.backgroundColor = UIColor.blue
+        searchFromOrTo!.setTitleColor(UIColor.white, for: .normal)
+        searchFromOrTo!.setTitle(searchResult.name, for: .normal)
+        var annotation = CircleAnnotation(centerCoordinate: searchResult.coordinate)
+        annotation.circleColor = StyleColor(.red)
+        annotation.circleRadius = 10
+        if (searchFromOrTo == startLocation) {
+            fromAnnotation = annotation
+        } else {
+            toAnnotation = annotation
         }
+        showResults(searchResult)
+    }
+    func categorySearchResultsReceived(results: [SearchResult]) { }
+    func userFavoriteSelected(_ userFavorite: FavoriteRecord) { }
+    func shouldCollapseForSelection(_ searchResult: SearchResult) -> Bool {
         return true
     }
-    
-    func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-        if (textField.hasText) {
-            buttonClear.setTitleColor(.black, for: .normal )
-            buttonClear.backgroundColor = .white
-            buttonClear.isEnabled = true
+}
+
+extension MapViewController: LocationPermissionsDelegate {
+    func locationManager(_ locationManager: LocationManager, didChangeAccuracyAuthorization accuracyAuthorization: CLAccuracyAuthorization) {
+        if accuracyAuthorization == .reducedAccuracy {
+         // Perform an action in response to the new change in accuracy
         }
     }
-    
 }
+
+
+
 
