@@ -14,7 +14,7 @@ import MapboxSearchUI
 
 class MapViewController: UIViewController, MKMapViewDelegate {
     
-    let navController = AdvancedViewController()
+    var navController = AdvancedViewController()
     
     let searchController = MapboxSearchController()
     
@@ -27,7 +27,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     var fromAnnotation: CircleAnnotation? = nil
     
     var toAnnotation: CircleAnnotation? = nil
-        
+    
     internal var mapView: MapView!
     
     override func viewDidLoad() {
@@ -46,11 +46,15 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         panelController = MapboxPanelController(rootViewController: searchController)
         addChild(panelController!)
         annotationManager = mapView.annotations.makeCircleAnnotationManager()
+        mapView.ornaments.options.compass.visibility = .visible
+        mapView.ornaments.options.compass.position = .bottomRight
+        mapView.ornaments.options.compass.margins.y = view.center.y - 50
+        mapView.ornaments.options.compass.margins.x = 20
     }
     
     func requestPermissionsButtonTapped() {
-           mapView.location.requestTemporaryFullAccuracyPermissions(withPurposeKey: "CustomKey")
-       }
+        mapView.location.requestTemporaryFullAccuracyPermissions(withPurposeKey: "CustomKey")
+    }
     
     func showResults(_ results: SearchResult) {
         buttonClear.isEnabled = true
@@ -72,6 +76,8 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
     }
     
+
+    
     
     override var preferredStatusBarStyle: UIStatusBarStyle{
         return .darkContent
@@ -79,7 +85,13 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     private let buttonStack: UIStackView = UIStackView()
     
-    @objc let userLocationButton: MapButton = MapButton(backColor: UIColor.cyan.cgColor, text: "X", frame: CGRect(x: 20, y: 0, width: 30, height: 30))
+    private let zoomButtonStack: UIStackView = UIStackView()
+    
+    let userLocationButton: MapButton = MapButton(backColor: UIColor.cyan.cgColor, text: "X", frame: CGRect(x: 20, y: 0, width: 30, height: 30))
+    
+    let zoomInButton: MapButton = MapButton(backColor: UIColor.black.cgColor, text: "+", frame: CGRect(x: 0, y: 0, width: 50, height: 50))
+    
+    let zoomOutButton: MapButton = MapButton(backColor: UIColor.black.cgColor, text: "-", frame: CGRect(x: 0, y: 0, width: 50, height: 50))
     
     private let buttonGo: MapButton = MapButton(backColor: UIColor.blue.cgColor, text: "Go", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
     
@@ -149,6 +161,38 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         view.addSubview(buttonStack)
         buttonClear.setTitleColor(UIColor.gray, for: .normal)
         buttonGo.addTarget(self, action: #selector(goButtonWasPressed), for: .touchUpInside)
+        zoomButtonStack.frame = CGRect(x: 0, y: 0, width: 50, height: 200)
+        zoomButtonStack.addArrangedSubview(zoomInButton)
+        zoomButtonStack.addArrangedSubview(zoomOutButton)
+        zoomButtonStack.center = view.center
+        zoomButtonStack.center.x = view.frame.size.width - 40
+        zoomButtonStack.spacing = 100
+        zoomButtonStack.axis = .vertical
+        zoomButtonStack.distribution = .fillEqually
+        zoomInButton.addTarget(self, action: #selector(zoomInPressed), for: .touchUpInside)
+        zoomOutButton.addTarget(self, action: #selector(zoomOutPressed), for: .touchUpInside)
+        view.addSubview(zoomButtonStack)
+    }
+    
+    @objc func zoomInPressed(){
+        let newCamera = CameraOptions(center: mapView.cameraState.center,
+                                      padding: .zero,
+                                      anchor: .zero,
+                                      zoom: mapView.cameraState.zoom + 1,
+                                      bearing: mapView.cameraState.bearing,
+                                      pitch: mapView.cameraState.pitch)
+        mapView.camera.fly(to: newCamera, duration: 0.2)
+    }
+    
+    @objc func zoomOutPressed(){
+        let newCamera = CameraOptions(center: mapView.cameraState.center,
+                                      padding: .zero,
+                                      anchor: .zero,
+                                      zoom: mapView.cameraState.zoom - 1,
+                                      bearing: mapView.cameraState.bearing,
+                                      pitch: mapView.cameraState.pitch)
+        mapView.camera.fly(to: newCamera, duration: 0.2)
+        
     }
     
     @objc func clearButtonWasPressed(){
@@ -158,7 +202,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         endLocation.setTitleColor(.white, for: .disabled)
         startLocation.backgroundColor = .lightGray
         endLocation.backgroundColor = .lightGray
-
+        
         buttonClear.setTitleColor(.gray, for: .disabled)
         buttonClear.backgroundColor = .lightGray
         buttonClear.isEnabled = false
@@ -169,6 +213,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     @objc func goButtonWasPressed(){
         print("Go button pressed")
+        navController = AdvancedViewController()
         if(fromAnnotation == nil){
             fromAnnotation = CircleAnnotation(centerCoordinate: mapView.location.latestLocation!.coordinate )
         }
@@ -190,9 +235,8 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 }
 
 extension MapViewController: SearchControllerDelegate {
-    func categorySearchResultsReceived(category: SearchCategory, results: [SearchResult]) {
-        
-    }
+    
+    
     
     func searchResultSelected(_ searchResult: SearchResult) {
         print(searchResult.name)
@@ -209,7 +253,6 @@ extension MapViewController: SearchControllerDelegate {
         }
         showResults(searchResult)
     }
-    func categorySearchResultsReceived(results: [SearchResult]) { }
     func userFavoriteSelected(_ userFavorite: FavoriteRecord) { }
     func shouldCollapseForSelection(_ searchResult: SearchResult) -> Bool {
         return true
@@ -219,7 +262,7 @@ extension MapViewController: SearchControllerDelegate {
 extension MapViewController: LocationPermissionsDelegate {
     func locationManager(_ locationManager: LocationManager, didChangeAccuracyAuthorization accuracyAuthorization: CLAccuracyAuthorization) {
         if accuracyAuthorization == .reducedAccuracy {
-         // Perform an action in response to the new change in accuracy
+            // Perform an action in response to the new change in accuracy
         }
     }
 }

@@ -8,6 +8,8 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
     
     public var coordinates: [LocationCoordinate2D] = []
     
+    let movementMethodStack = UIStackView()
+    
     var navigationMapView: NavigationMapView!
     var navigationRouteOptions: NavigationRouteOptions!
     var currentRouteIndex = 0 {
@@ -42,9 +44,49 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
         })
         navigationMapView.show(routes)
         navigationMapView.showWaypoints(on: currentRoute)
+        distanceLabel.text = String(format: "%.01fkm", routes[self.currentRouteIndex].distance / 1000)
     }
     
     var startButton: UIButton!
+    
+    var walkingButton: MapButton = {
+        let control = MapButton(backColor: UIColor.lightGray.cgColor, text: "Walk", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+        control.addTarget(self, action: #selector(walkingPressed), for: .touchUpInside)
+        return control
+    }()
+    
+    var automobileButton: MapButton = {
+        let control = MapButton(backColor: UIColor.systemGreen.cgColor, text: "Automobile", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+        control.addTarget(self, action: #selector(automobilePressed), for: .touchUpInside)
+        return control
+    }()
+    
+    var cyclingButton: MapButton = {
+        let control = MapButton(backColor: UIColor.lightGray.cgColor, text: "Cycling", frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+        control.addTarget(self, action: #selector(cyclingPressed), for: .touchUpInside)
+        return control
+    }()
+    
+    @objc func walkingPressed(){
+        automobileButton.backgroundColor = .lightGray
+        cyclingButton.backgroundColor = .lightGray
+        walkingButton.backgroundColor = .systemGreen
+        requestRoute(coordinates: coordinates, profile: .walking)
+    }
+    
+    @objc func automobilePressed(){
+        cyclingButton.backgroundColor = .lightGray
+        walkingButton.backgroundColor = .lightGray
+        automobileButton.backgroundColor = .systemGreen
+        requestRoute(coordinates: coordinates, profile: .automobileAvoidingTraffic)
+    }
+    
+    @objc func cyclingPressed(){
+        automobileButton.backgroundColor = .lightGray
+        walkingButton.backgroundColor = .lightGray
+        cyclingButton.backgroundColor = .systemGreen
+        requestRoute(coordinates: coordinates, profile: .cycling)
+    }
     
     // MARK: - UIViewController lifecycle methods
     
@@ -73,24 +115,28 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
         startButton.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -20).isActive = true
         startButton.centerXAnchor.constraint(equalTo: self.view.centerXAnchor).isActive = true
         view.setNeedsLayout()
-        requestRoute(coordinates: coordinates)
-
-        guard let routeResponse = routeResponse, let navigationRouteOptions = navigationRouteOptions else { return }
-        // For demonstration purposes, simulate locations if the Simulate Navigation option is on.
-        let navigationService = MapboxNavigationService(routeResponse: routeResponse,
-                                                        routeIndex: currentRouteIndex,
-                                                        routeOptions: navigationRouteOptions,
-                                                        simulating: .onPoorGPS )
-        let navigationOptions = NavigationOptions(navigationService: navigationService)
-        let navigationViewController = NavigationViewController(for: routeResponse, routeIndex: currentRouteIndex,
-                                                                   routeOptions: navigationRouteOptions,
-                                                                   navigationOptions: navigationOptions)
-        navigationViewController.delegate = self
         
-        present(navigationViewController, animated: true, completion: nil)
-
+        requestRoute(coordinates: coordinates, profile: .automobileAvoidingTraffic)
         
+        movementMethodStack.addArrangedSubview(walkingButton)
+        movementMethodStack.addArrangedSubview(automobileButton)
+        movementMethodStack.addArrangedSubview(cyclingButton)
+        movementMethodStack.frame = CGRect(x: 0, y: view.frame.size.height - 50, width: view.frame.size.width-30, height: 40)
+        movementMethodStack.center = view.center
+        movementMethodStack.center.y = 80
+        movementMethodStack.spacing = 30
+        movementMethodStack.alignment = .fill
+        movementMethodStack.axis = .horizontal
+        movementMethodStack.distribution = .fillEqually
+        view.addSubview(distanceLabel)
+        distanceLabel.frame = CGRect(x: 20, y: view.center.y, width: 60, height: 40)
+        distanceLabel.backgroundColor = .systemBlue
+        distanceLabel.layer.masksToBounds = true
+        distanceLabel.layer.cornerRadius = 10
+        distanceLabel.textAlignment = .center
+        view.addSubview(movementMethodStack)
     }
+    
     @objc func tappedButton(sender: UIButton) {
         view.removeFromSuperview()
     }
@@ -101,14 +147,17 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
         super.viewDidLayoutSubviews()
     }
     
+    let distanceLabel = UILabel()
     
-    public func requestRoute(coordinates: [LocationCoordinate2D]) {
+    
+    public func requestRoute(coordinates: [LocationCoordinate2D], profile: ProfileIdentifier) {
+        currentRouteIndex = 0
         let userWaypoint = Waypoint(coordinate: coordinates[0])
         
         let destinationWaypoint = Waypoint(coordinate: coordinates[1])
         
         let navigationRouteOptions = NavigationRouteOptions(waypoints: [userWaypoint, destinationWaypoint])
-        
+        navigationRouteOptions.profileIdentifier = profile
         Directions.shared.calculate(navigationRouteOptions) { [weak self] (_, result) in
             switch result {
             case .failure(let error):
@@ -125,11 +174,27 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
                 }
             }
         }
+        guard let routeResponse = self.routeResponse, let navigationRouteOptions = self.navigationRouteOptions else { return }
+        // For demonstration purposes, simulate locations if the Simulate Navigation option is on.
+        let navigationService = MapboxNavigationService(routeResponse: routeResponse,
+                                                        routeIndex: currentRouteIndex,
+                                                        routeOptions: navigationRouteOptions,
+                                                        simulating: .onPoorGPS )
+        let navigationOptions = NavigationOptions(navigationService: navigationService)
+        let navigationViewController = NavigationViewController(for: routeResponse, routeIndex: currentRouteIndex,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
+
+        navigationViewController.delegate = self
+
+        //present(navigationViewController, animated: true, completion: nil)
+
     }
     
     // Delegate method called when the user selects a route
     func navigationMapView(_ mapView: NavigationMapView, didSelect route: Route) {
         self.currentRouteIndex = self.routes?.firstIndex(of: route) ?? 0
+        distanceLabel.text = String(format: "%.01fkm", routes![self.currentRouteIndex].distance / 1000)
     }
     
     func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {
