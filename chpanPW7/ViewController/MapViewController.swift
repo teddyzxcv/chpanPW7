@@ -235,8 +235,9 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 }
 
 extension MapViewController: SearchControllerDelegate {
-    
-    
+    func categorySearchResultsReceived(category: SearchCategory, results: [SearchResult]) {
+        
+    }
     
     func searchResultSelected(_ searchResult: SearchResult) {
         print(searchResult.name)
