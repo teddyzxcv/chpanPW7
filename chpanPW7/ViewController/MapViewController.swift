@@ -235,8 +235,26 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 }
 
 extension MapViewController: SearchControllerDelegate {
-    func categorySearchResultsReceived(category: SearchCategory, results: [SearchResult]) {
+    func showCategoryResults() {
+        let newCamera = CameraOptions(center: mapView.location.latestLocation?.coordinate,
+                                      padding: .zero,
+                                      anchor: .zero,
+                                      zoom: 12,
+                                      bearing: 0.0,
+                                      pitch: 15.0)
+        self.mapView.camera.fly(to: newCamera, duration: 2.0)
         
+    }
+    
+    func categorySearchResultsReceived(category: SearchCategory, results: [SearchResult]) {
+        annotationManager?.annotations.removeAll()
+        results.forEach{ result in
+            var annotation = CircleAnnotation(centerCoordinate: result.coordinate)
+            annotation.circleColor = StyleColor(.orange)
+            annotation.circleRadius = 10
+            annotationManager?.annotations.append(annotation)
+        }
+        showCategoryResults()
     }
     
     func searchResultSelected(_ searchResult: SearchResult) {
