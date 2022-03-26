@@ -33,6 +33,8 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        searchFromOrTo = startLocation
+        
         let myResourceOptions = ResourceOptions(accessToken: Bundle.main.object(forInfoDictionaryKey: "MBXAccessToken") as! String)
         let myMapInitOptions = MapInitOptions(resourceOptions: myResourceOptions)
         mapView = MapView(frame: view.bounds, mapInitOptions: myMapInitOptions)
@@ -212,7 +214,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     @objc func goButtonWasPressed(){
-        print("Go button pressed")
         navController = AdvancedViewController()
         if(fromAnnotation == nil){
             fromAnnotation = CircleAnnotation(centerCoordinate: mapView.location.latestLocation!.coordinate )
@@ -224,7 +225,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         panelController?.setState(.hidden)
         addChild(navController)
         view.addSubview(navController.view)
-        
     }
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let render = MKPolylineRenderer(overlay: overlay as! MKPolyline)
